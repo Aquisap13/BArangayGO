@@ -1302,6 +1302,15 @@ footer a{
     font-size:10.5px;
   }
 }
+
+.birth-date-error{
+  display:block;
+  margin-top:6px;
+  color:#c43c3c;
+  font-size:12px;
+  line-height:1.4;
+  font-weight:600;
+}
 </style>
 </head>
 
@@ -1482,18 +1491,40 @@ footer a{
               <div class="form-section-title">2. Personal information</div>
               <div class="form-grid">
                 <div class="field full"><label>Full Name <em>*</em></label><input id="fullName" type="text" placeholder="Last Name, First Name, Middle Name" required></div>
-                <div class="field"><label>Date of Birth <em>*</em></label><input id="birthDate" type="date" required></div>
+                <div class="field">
+                  <label>Date of Birth <em>*</em></label>
+                  <input id="birthDate" type="date" required aria-describedby="birthDateError">
+                  <small id="birthDateError" class="birth-date-error" hidden>
+                    You must be at least 18 years old to submit this request.
+                  </small>
+                </div>
                 <div class="field"><label>Sex <em>*</em></label><select id="sex" required><option value="">Select</option><option>Male</option><option>Female</option></select></div>
                 <div class="field full"><label>Complete Address in Barangay Palico II <em>*</em></label><input id="address" type="text" placeholder="House/Block/Lot, Street, Palico II, Imus, Cavite" required></div>
-                <div class="field"><label>Mobile Number <em>*</em></label><input id="mobile" type="tel" placeholder="09XX XXX XXXX" required></div>
+                <div class="field"><label>Mobile Number <em>*</em></label><input id="mobile" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="11" placeholder="09XXXXXXXXX" autocomplete="tel" required></div>
                 <div class="field"><label>Email Address</label><input id="email" type="email" placeholder="name@example.com"></div>
               </div>
 
               <div class="form-section-title">3. Request details</div>
               <div class="form-grid">
-                <div class="field full"><label>Purpose of Request <em>*</em></label><textarea id="purpose" rows="3" placeholder="Example: Employment requirement / Financial assistance / School requirement" required></textarea></div>
+                <div class="field full"><label>Purpose of Request <em>*</em></label><select id="purpose" required>
+                  <option value="">Select purpose of request</option>
+                  <option>For marriage</option>
+                  <option>For school purpose</option>
+                  <option>For employment</option>
+                  <option>For business</option>
+                  <option>For financial assistance</option>
+                  <option>For medical assistance</option>
+                  <option>For government transaction</option>
+                  <option>For legal requirement</option>
+                  <option>For bank / loan application</option>
+                  <option>Other Reasons</option>
+                </select>
+                <input id="otherPurpose" type="text" placeholder="Please specify your purpose" style="display:none;margin-top:8px;" aria-label="Other reason for request">
+                <small id="otherPurposeError" style="display:none;color:#c43c3c;margin-top:5px;font-size:13px;">Please specify your purpose.</small></div>
                 <div class="field"><label>Preferred Pick-up Date <em>*</em></label><input id="pickupDate" type="date" required></div>
-                <div class="field"><label>Valid ID to Present <em>*</em></label><select id="idType" required><option value="">Select ID type</option><option>PhilID / National ID</option><option>Driver's License</option><option>Passport</option><option>UMID</option><option>Other Government ID</option></select></div>
+                <div class="field"><label>Valid ID to Present <em>*</em></label><select id="idType" required><option value="">Select ID type</option><option>PhilID / National ID</option><option>Driver's License</option><option>Passport</option><option>UMID</option><option>Other Government ID</option></select>
+                  <div id="idUploadWrap" style="display:none;margin-top:8px;"><label for="idPicture" style="font-size:12px;font-weight:700;display:block;margin-bottom:5px;">Upload Picture of Valid ID <em>*</em></label><input id="idPicture" type="file" accept="image/*" aria-describedby="idPictureHint"><small id="idPictureHint" style="display:block;margin-top:5px;color:#6b7280;font-size:12px;">Please upload a clear picture of the selected ID.</small><small id="idPictureError" style="display:none;color:#c43c3c;margin-top:5px;font-size:13px;">Please upload a clear picture of your selected valid ID.</small></div>
+                </div>
               </div>
 
               <div class="form-check"><input id="confirmInfo" type="checkbox" required><label for="confirmInfo">I confirm that the information I provided is true and correct, and I understand that the barangay office may verify my information before releasing the document. <em>*</em></label></div>
@@ -1502,7 +1533,7 @@ footer a{
 
             <div id="requestSuccess" class="request-success" hidden>
               <div class="success-icon">✓</div>
-              <div><span class="form-label">REQUEST SUBMITTED</span><h3>Your request has been recorded.</h3><p>Please save your reference number and present a valid ID when claiming the document.</p><div class="reference"><span>Reference Number</span><strong id="referenceNumber">BRGY-000000</strong></div><div class="success-meta"><span>Document: <b id="successDocument"></b></span><span>Status: <b>For Verification</b></span></div></div>
+              <div><span class="form-label">REQUEST SUBMITTED</span><h3>Your request has been recorded.</h3><p>Please save your reference number and present a valid ID when claiming the document.</p><div class="reference"><span>Reference Number</span><strong id="referenceNumber">BRGY-000000</strong></div><div class="success-meta"><span>Document: <b id="successDocument"></b></span><span>Status: <b>For Verification</b></span></div><div class="form-actions" style="margin-top:14px"><button type="button" id="submitAnotherBtn" class="submit-btn">Submit Another Form →</button></div></div>
             </div>
           </div>
 
@@ -1605,6 +1636,87 @@ function selectDocument(name){
   });
 }
 
+const mobile=document.getElementById('mobile');
+if(mobile){
+  // Mobile number: digits only (0-9), max 11 digits
+  mobile.addEventListener('input',()=>{
+    mobile.value=mobile.value.replace(/\D/g,'').slice(0,11);
+  });
+  mobile.addEventListener('keydown',e=>{
+    const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab'];
+    if(allowed.includes(e.key) || e.ctrlKey || e.metaKey) return;
+    if(!/^[0-9]$/.test(e.key)) e.preventDefault();
+  });
+  mobile.addEventListener('paste',e=>{
+    e.preventDefault();
+    const text=(e.clipboardData || window.clipboardData).getData('text');
+    const digits=text.replace(/\D/g,'').slice(0,11);
+    const start=mobile.selectionStart ?? mobile.value.length;
+    const end=mobile.selectionEnd ?? mobile.value.length;
+    mobile.value=(mobile.value.slice(0,start)+digits+mobile.value.slice(end)).slice(0,11);
+    mobile.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+}
+
+const purpose=document.getElementById('purpose');
+const otherPurpose=document.getElementById('otherPurpose');
+const otherPurposeError=document.getElementById('otherPurposeError');
+
+if(purpose && otherPurpose){
+  const toggleOtherPurpose=()=>{
+    const isOther=purpose.value==='Other Reasons';
+    otherPurpose.style.display=isOther?'block':'none';
+    otherPurpose.required=isOther;
+    if(!isOther){
+      otherPurpose.value='';
+      otherPurpose.setCustomValidity('');
+      if(otherPurposeError) otherPurposeError.style.display='none';
+    }
+  };
+  purpose.addEventListener('change',toggleOtherPurpose);
+  otherPurpose.addEventListener('input',()=>{
+    if(purpose.value==='Other Reasons'){
+      const valid=otherPurpose.value.trim().length>0;
+      otherPurpose.setCustomValidity(valid?'':'Please specify your purpose.');
+      if(otherPurposeError) otherPurposeError.style.display=valid?'none':'block';
+    }
+  });
+  toggleOtherPurpose();
+}
+
+const idType=document.getElementById('idType');
+const idUploadWrap=document.getElementById('idUploadWrap');
+const idPicture=document.getElementById('idPicture');
+const idPictureError=document.getElementById('idPictureError');
+
+if(idType && idUploadWrap && idPicture){
+  const updateIdUpload=()=>{
+    const hasIdType=!!idType.value;
+    idUploadWrap.style.display=hasIdType?'block':'none';
+    idPicture.required=hasIdType;
+    if(!hasIdType){
+      idPicture.value='';
+      idPicture.setCustomValidity('');
+      if(idPictureError) idPictureError.style.display='none';
+    }
+  };
+
+  idType.addEventListener('change',()=>{
+    updateIdUpload();
+    if(idType.value) idPicture.focus();
+  });
+
+  idPicture.addEventListener('change',()=>{
+    const file=idPicture.files && idPicture.files[0];
+    const valid=!!file && file.type.startsWith('image/');
+    idPicture.setCustomValidity(valid?'':'Please upload a clear picture of your selected valid ID.');
+    if(idPictureError) idPictureError.style.display=valid?'none':'block';
+  });
+
+  form?.addEventListener('reset',()=>setTimeout(updateIdUpload,0));
+  updateIdUpload();
+}
+
 const pickup=document.getElementById('pickupDate');
 if(pickup){
   const minDate=new Date();
@@ -1612,10 +1724,81 @@ if(pickup){
   pickup.min=minDate.toISOString().split('T')[0];
 }
 
+// Applicants must be at least 18 years old.
+const birthDate=document.getElementById('birthDate');
+const birthDateError=document.getElementById('birthDateError');
+
+function getMaxBirthDateFor18(){
+  const today=new Date();
+  const maxDate=new Date(
+    today.getFullYear()-18,
+    today.getMonth(),
+    today.getDate()
+  );
+  return maxDate.toISOString().split('T')[0];
+}
+
+function validateBirthDate(){
+  if(!birthDate || !birthDate.value){
+    if(birthDate){
+      birthDate.setCustomValidity('');
+    }
+    if(birthDateError){
+      birthDateError.hidden=true;
+    }
+    return true;
+  }
+
+  const selectedDate=new Date(birthDate.value + 'T00:00:00');
+  const today=new Date();
+  let age=today.getFullYear()-selectedDate.getFullYear();
+  const monthDiff=today.getMonth()-selectedDate.getMonth();
+
+  if(
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < selectedDate.getDate())
+  ){
+    age--;
+  }
+
+  if(age < 18){
+    birthDate.setCustomValidity('Applicant must be at least 18 years old.');
+    if(birthDateError){
+      birthDateError.hidden=false;
+    }
+    return false;
+  }
+
+  birthDate.setCustomValidity('');
+  if(birthDateError){
+    birthDateError.hidden=true;
+  }
+  return true;
+}
+
+if(birthDate){
+  // The latest selectable DOB is exactly 18 years before today.
+  birthDate.max=getMaxBirthDateFor18();
+  birthDate.addEventListener('change',validateBirthDate);
+  birthDate.addEventListener('input',validateBirthDate);
+}
+
 if(form){
   form.addEventListener('submit',e=>{
     e.preventDefault();
-    if(!form.checkValidity()){form.reportValidity();return;}
+
+    // Validate the 18+ age requirement before anything is submitted.
+    const isAdult=validateBirthDate();
+    if(!isAdult){
+      birthDate.focus();
+      return;
+    }
+
+    if(!form.checkValidity()){
+      form.reportValidity();
+      return;
+    }
+
     const selected=document.querySelector('input[name="document"]:checked').value;
     const ref='PALICO2-'+new Date().getFullYear()+'-'+Math.floor(100000+Math.random()*900000);
     document.getElementById('referenceNumber').textContent=ref;
@@ -1623,7 +1806,43 @@ if(form){
     form.hidden=true;
     document.querySelector('.form-card-head').hidden=true;
     document.getElementById('requestSuccess').hidden=false;
+
+    // After successful submission, highlight Step 2 (Submit request).
+    document.querySelectorAll('.process-step').forEach(step=>step.classList.remove('active'));
+    const submitStep=document.querySelectorAll('.process-step')[1];
+    if(submitStep) submitStep.classList.add('active');
+
     document.getElementById('requestSuccess').scrollIntoView({behavior:'smooth',block:'center'});
+  });
+}
+
+const submitAnotherBtn=document.getElementById('submitAnotherBtn');
+if(submitAnotherBtn){
+  submitAnotherBtn.addEventListener('click',()=>{
+    const requestSuccess=document.getElementById('requestSuccess');
+    const formHead=document.querySelector('.form-card-head');
+
+    form.reset();
+    // Clear custom validation messages from the previous request.
+    if(birthDate) birthDate.setCustomValidity('');
+    if(otherPurpose) otherPurpose.setCustomValidity('');
+    if(idPicture) idPicture.setCustomValidity('');
+    if(birthDateError) birthDateError.hidden=true;
+    if(otherPurposeError) otherPurposeError.style.display='none';
+    if(idPictureError) idPictureError.style.display='none';
+    if(typeof toggleOtherPurpose==='function') toggleOtherPurpose();
+    if(typeof updateIdUpload==='function') updateIdUpload();
+
+    form.hidden=false;
+    if(formHead) formHead.hidden=false;
+    requestSuccess.hidden=true;
+
+    // Return the process indicator to Step 1 for the new request.
+    document.querySelectorAll('.process-step').forEach(step=>step.classList.remove('active'));
+    const fillStep=document.querySelectorAll('.process-step')[0];
+    if(fillStep) fillStep.classList.add('active');
+
+    form.scrollIntoView({behavior:'smooth',block:'start'});
   });
 }
 </script>
